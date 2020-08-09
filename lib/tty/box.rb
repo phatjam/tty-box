@@ -188,7 +188,7 @@ module TTY
     #
     # @api public
     def frame(*content, top: nil, left: nil, width: nil, height: nil, align: :left,
-              padding: 0, title: {}, border: :light, style: {})
+              padding: 0, title: {}, border: :light, style: {}, count: 1)
       output = []
       sep = NEWLINE
       position = top && left
@@ -224,38 +224,58 @@ module TTY
 
       if border.top?
         output << cursor.move_to(left, top) if position
-        output << top_border(title, width, border, style)
+        top_border_str = ''
+
+        count.times do |i|
+          top_border_str += top_border(title, width, border, style)
+          top_border_str += '  ' if (i < count - 1)
+        end
+
+        output << top_border_str
         output << sep unless position
       end
 
       (height - top_size - bottom_size).times do |i|
         output << cursor.move_to(left, top + i + top_size) if position
-        if border.left?
-          output << border_bg.(border_fg.(pipe_char(border.type)))
-        end
 
-        content_size = width - left_size - right_size
-        unless content[i].nil?
-          output << bg.(fg.(content[i]))
-          size = Strings::ANSI.sanitize(content[i]).scan(/[[:print:]]/).join.size
-          content_size -= size
-        end
-        if style[:fg] || style[:bg] || !position # something to color
-          output << bg.(fg.(" " * content_size))
-        end
-
-        if border.right?
-          if position
-            output << cursor.move_to(left + width - right_size, top + i + top_size)
+        count.times do |x|
+          if border.left?
+            output << border_bg.(border_fg.(pipe_char(border.type)))
           end
-          output << border_bg.(border_fg.(pipe_char(border.type)))
+
+          content_size = width - left_size - right_size
+
+          unless content[i].nil?
+            output << bg.(fg.(content[i]))
+            size = Strings::ANSI.sanitize(content[i]).scan(/[[:print:]]/).join.size
+            content_size -= size
+          end
+
+          if style[:fg] || style[:bg] || !position # something to color
+            output << bg.(fg.(" " * content_size))
+          end
+
+          if border.right?
+            if position
+              output << cursor.move_to(left + width - right_size, top + i + top_size)
+            end
+            output << border_bg.(border_fg.(pipe_char(border.type)))
+          end
+
+          output << '  ' if (x < count - 1)
         end
+
         output << sep unless position
       end
 
       if border.bottom?
         output << cursor.move_to(left, top + height - bottom_size) if position
-        output << bottom_border(title, width, border, style)
+
+        count.times do |x|
+          output << bottom_border(title, width, border, style)
+          output << '  ' if x < count - 1
+        end
+
         output << sep unless position
       end
 
