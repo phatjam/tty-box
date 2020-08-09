@@ -11,6 +11,7 @@ module TTY
   module Box
     module_function
 
+    SPACE = ' '
     NEWLINE = "\n"
 
     LINE_BREAK = %r{\r\n|\r|\n}.freeze
@@ -443,6 +444,24 @@ module TTY
         bg.(fg.(title[:bottom_right].to_s)),
         bg.(fg.(bottom_right_corner(border)))
       ].join('')
+    end
+
+    def merge_boxes(main, add)
+      new_box = []
+
+      first = main.split("\n")
+      first_width = first.first.length
+      second = add.split("\n")
+      second_width = second.first.length
+
+      [first.length, second.length].max.times do |x|
+        main_line = first[x].nil? ? SPACE * first_width : first[x]
+        add_line = second[x].nil? ? SPACE * second_width : second[x]
+
+        new_box << main_line + '  ' + add_line
+      end
+
+      new_box.join("\n")
     end
   end # TTY
 end # Box
